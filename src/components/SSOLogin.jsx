@@ -36,14 +36,11 @@ const SSOLogin = () => {
     };
 
     // Función para manejar éxito del login
-    const handleLoginSuccess = (message, userInfo) => {
+    const handleLoginSuccess = (userInfo) => {
         // Guardar tokens
         saveTokens(userInfo.tokens);
         
-        // Mostrar mensaje de éxito
-        alert(message);
-        
-        // Redirigir al return_url con los tokens
+        // Redirigir al return_url con los tokens (sin popup)
         if (returnUrl) {
             // Crear URL con los tokens como parámetros
             const url = new URL(returnUrl);
@@ -56,8 +53,8 @@ const SSOLogin = () => {
             // Redirigir
             window.location.href = url.toString();
         } else {
-            // Si no hay return_url, mostrar mensaje
-            alert('Login exitoso, pero no se especificó una URL de retorno');
+            // Si no hay return_url, mostrar mensaje de error
+            showError('Login exitoso, pero no se especificó una URL de retorno');
         }
     };
 
@@ -173,13 +170,8 @@ const SSOLogin = () => {
                 return;
             }
             
-            // Mostrar mensaje según la acción
-            const message = data.action === 'register' 
-                ? '¡Bienvenido! Tu cuenta ha sido creada exitosamente' 
-                : '¡Bienvenido de vuelta!';
-            
-            // Manejar éxito
-            handleLoginSuccess(message, {
+            // Manejar éxito (sin mensaje)
+            handleLoginSuccess({
                 tokens: data.tokens,
                 name: payload.name,
                 email: payload.email
@@ -248,13 +240,8 @@ const SSOLogin = () => {
                 return;
             }
             
-            // Mostrar mensaje según la acción
-            const message = response.action === 'register' 
-                ? '¡Bienvenido! Tu cuenta ha sido creada exitosamente' 
-                : '¡Bienvenido de vuelta!';
-            
-            // Manejar éxito
-            handleLoginSuccess(message, {
+            // Manejar éxito (sin mensaje)
+            handleLoginSuccess({
                 tokens: response.tokens,
                 name: data.user ? `${data.user.name.firstName} ${data.user.name.lastName}` : null,
                 email: data.user ? data.user.email : null
@@ -314,8 +301,8 @@ const SSOLogin = () => {
                 return;
             }
             
-            // Manejar éxito
-            handleLoginSuccess('¡Bienvenido de vuelta!', {
+            // Manejar éxito (sin mensaje)
+            handleLoginSuccess({
                 tokens: data.tokens,
                 email: email
             });
@@ -407,8 +394,8 @@ const SSOLogin = () => {
                 return;
             }
             
-            // Manejar éxito
-            handleLoginSuccess('¡Bienvenido! Tu cuenta ha sido creada exitosamente', {
+            // Manejar éxito (sin mensaje)
+            handleLoginSuccess({
                 tokens: data.tokens,
                 name: name,
                 email: email,
