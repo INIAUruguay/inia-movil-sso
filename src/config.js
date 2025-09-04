@@ -1,15 +1,15 @@
 // Configuración de la miniapp
 export const INIA_CONFIG = {
-    // URL del backend INIA (cambiar en producción)
-    baseUrl: 'http://localhost:8000/api',
+    // URL del backend INIA (producción)
+    baseUrl: 'https://repositorioapptest.inia.uy/api',
     
     // Credenciales OIDC (obtener de INIA)
     clientId: '815547',
     clientSecret: 'c792c7de465b00126292ea68cc5fbf5ce491a64c6c26fad8509b3419',
     
     // URLs de callback
-    redirectUri: 'http://localhost:5173/auth/callback',
-    logoutUri: 'http://localhost:5173/logout',
+    redirectUri: 'https://inia-movilo-sso.vercel.app/auth/callback',
+    logoutUri: 'https://inia-movilo-sso.vercel.app/logout',
     
     // Scopes necesarios
     scope: 'openid profile email',

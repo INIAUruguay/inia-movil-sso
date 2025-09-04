@@ -98,6 +98,34 @@
     background: #218838;
 }
 
+/* Estilos para el botón oficial de Google */
+.google-button-container {
+    margin-bottom: 15px;
+}
+
+/* Personalización del botón oficial de Google */
+.google-button-container iframe {
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    transition: all 0.3s ease !important;
+}
+
+.google-button-container iframe:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Estilos adicionales para el botón de Google */
+.google-button-container div[role="button"] {
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+}
+
+.google-button-container div[role="button"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2) !important;
+}
+
 .info-text {
     font-size: 14px;
     color: #666;
@@ -225,6 +253,27 @@
     cursor: not-allowed;
 }
 
+/* Estilos específicos para SSO */
+.return-url-info {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.return-url-info p {
+    margin: 0;
+    color: #495057;
+    font-size: 0.9em;
+}
+
+.return-url-info strong {
+    color: #007bff;
+    word-break: break-all;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
     .login-card {
@@ -237,6 +286,14 @@
     
     .modal-content {
         padding: 20px;
+    }
+    
+    .return-url-info {
+        padding: 10px;
+    }
+    
+    .return-url-info p {
+        font-size: 0.8em;
     }
 }
 

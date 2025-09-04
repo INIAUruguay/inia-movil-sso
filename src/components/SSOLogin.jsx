@@ -3,22 +3,29 @@ import { INIA_CONFIG, saveTokens } from '../config';
 import ErrorOverlay from './ErrorOverlay';
 import './Login.css';
 
-const Login = ({ onSuccess, onError }) => {
+const SSOLogin = () => {
     const [showEmailLogin, setShowEmailLogin] = useState(false);
     const [showRegister, setShowRegister] = useState(false);
     const [loading, setLoading] = useState(false);
     const [currentError, setCurrentError] = useState(null);
     const [retryFunction, setRetryFunction] = useState(null);
     const [errorContext, setErrorContext] = useState(null);
+    const [returnUrl, setReturnUrl] = useState(null);
+
+    // Obtener return_url de los parámetros de la URL
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnUrlParam = urlParams.get('return_url');
+        if (returnUrlParam) {
+            setReturnUrl(decodeURIComponent(returnUrlParam));
+        }
+    }, []);
 
     // Función para mostrar error
     const showError = (error, retryFn = null, context = null) => {
         setCurrentError(error);
         setRetryFunction(() => retryFn);
         setErrorContext(context);
-        if (onError) {
-            onError(error, context);
-        }
     };
 
     // Función para cerrar error
@@ -28,11 +35,29 @@ const Login = ({ onSuccess, onError }) => {
         setErrorContext(null);
     };
 
-    // Función para manejar éxito
-    const handleSuccess = (message, userInfo) => {
+    // Función para manejar éxito del login
+    const handleLoginSuccess = (message, userInfo) => {
+        // Guardar tokens
         saveTokens(userInfo.tokens);
-        if (onSuccess) {
-            onSuccess(message, userInfo);
+        
+        // Mostrar mensaje de éxito
+        alert(message);
+        
+        // Redirigir al return_url con los tokens
+        if (returnUrl) {
+            // Crear URL con los tokens como parámetros
+            const url = new URL(returnUrl);
+            url.searchParams.set('access_token', userInfo.tokens.access_token);
+            url.searchParams.set('id_token', userInfo.tokens.id_token);
+            url.searchParams.set('token_type', userInfo.tokens.token_type);
+            url.searchParams.set('expires_in', userInfo.tokens.expires_in);
+            url.searchParams.set('scope', userInfo.tokens.scope);
+            
+            // Redirigir
+            window.location.href = url.toString();
+        } else {
+            // Si no hay return_url, mostrar mensaje
+            alert('Login exitoso, pero no se especificó una URL de retorno');
         }
     };
 
@@ -114,10 +139,6 @@ const Login = ({ onSuccess, onError }) => {
         }
     };
 
-
-
-
-
     // Callback de Google Sign In
     const handleGoogleCallback = async (response) => {
         try {
@@ -146,14 +167,8 @@ const Login = ({ onSuccess, onError }) => {
             if (data.error) {
                 showError(
                     `Error del backend: ${data.error}`, 
-                    handleGoogleLogin,
-                    `Backend INIA retornó error. Status: ${result.status}, URL: ${INIA_CONFIG.baseUrl}/oidc/social-login/, Payload enviado: ${JSON.stringify({
-                        provider: 'google',
-                        name: payload.name,
-                        email: payload.email,
-                        user: payload.email,
-                        token: payload.sub
-                    }, null, 2)}`
+                    handleGoogleCallback,
+                    `Backend INIA retornó error. Status: ${result.status}`
                 );
                 return;
             }
@@ -164,7 +179,7 @@ const Login = ({ onSuccess, onError }) => {
                 : '¡Bienvenido de vuelta!';
             
             // Manejar éxito
-            handleSuccess(message, {
+            handleLoginSuccess(message, {
                 tokens: data.tokens,
                 name: payload.name,
                 email: payload.email
@@ -174,8 +189,8 @@ const Login = ({ onSuccess, onError }) => {
             console.error('Error en callback de Google:', error);
             showError(
                 `Error al procesar respuesta de Google: ${error.message}`, 
-                handleGoogleLogin,
-                `Error técnico en el procesamiento del callback de Google. Tipo: ${error.name}, Stack trace disponible en consola.`
+                handleGoogleCallback,
+                `Error técnico en el procesamiento del callback de Google.`
             );
         } finally {
             setLoading(false);
@@ -191,7 +206,7 @@ const Login = ({ onSuccess, onError }) => {
                 showError(
                     'Apple Sign In SDK no está disponible', 
                     handleAppleLogin,
-                    'El script de Apple Sign In no se ha cargado correctamente. Verifica la conexión a internet y que el script se esté cargando desde https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js'
+                    'El script de Apple Sign In no se ha cargado correctamente.'
                 );
                 return;
             }
@@ -228,13 +243,7 @@ const Login = ({ onSuccess, onError }) => {
                 showError(
                     `Error del backend: ${response.error}`, 
                     handleAppleLogin,
-                    `Backend INIA retornó error. Status: ${result.status}, URL: ${INIA_CONFIG.baseUrl}/oidc/social-login/, Payload enviado: ${JSON.stringify({
-                        provider: 'apple',
-                        name: data.user ? `${data.user.name.firstName} ${data.user.name.lastName}` : null,
-                        email: data.user ? data.user.email : null,
-                        user: data.user ? data.user.email : data.user,
-                        token: data.user
-                    }, null, 2)}`
+                    `Backend INIA retornó error. Status: ${result.status}`
                 );
                 return;
             }
@@ -245,7 +254,7 @@ const Login = ({ onSuccess, onError }) => {
                 : '¡Bienvenido de vuelta!';
             
             // Manejar éxito
-            handleSuccess(message, {
+            handleLoginSuccess(message, {
                 tokens: response.tokens,
                 name: data.user ? `${data.user.name.firstName} ${data.user.name.lastName}` : null,
                 email: data.user ? data.user.email : null
@@ -256,7 +265,7 @@ const Login = ({ onSuccess, onError }) => {
             showError(
                 `Error al procesar Apple Sign In: ${error.message}`, 
                 handleAppleLogin,
-                `Error técnico en Apple Sign In. Client ID: ${INIA_CONFIG.appleClientId}, Tipo: ${error.name}, Stack trace disponible en consola.`
+                `Error técnico en Apple Sign In.`
             );
         } finally {
             setLoading(false);
@@ -274,7 +283,6 @@ const Login = ({ onSuccess, onError }) => {
         
         const retryFn = () => {
             setShowEmailLogin(true);
-            // Re-enviar el formulario
             setTimeout(() => {
                 const form = document.querySelector('form');
                 if (form) {
@@ -301,13 +309,13 @@ const Login = ({ onSuccess, onError }) => {
                 showError(
                     `Error del backend: ${data.error}`, 
                     retryFn,
-                    `Backend INIA retornó error en login. Status: ${result.status}, URL: ${INIA_CONFIG.baseUrl}/oidc/login/, Credenciales enviadas: email=${email}, password=***`
+                    `Backend INIA retornó error en login. Status: ${result.status}`
                 );
                 return;
             }
             
             // Manejar éxito
-            handleSuccess('¡Bienvenido de vuelta!', {
+            handleLoginSuccess('¡Bienvenido de vuelta!', {
                 tokens: data.tokens,
                 email: email
             });
@@ -318,7 +326,7 @@ const Login = ({ onSuccess, onError }) => {
             showError(
                 `Error de conexión: ${error.message}`, 
                 retryFn,
-                `Error técnico en login con email. URL: ${INIA_CONFIG.baseUrl}/oidc/login/, Tipo: ${error.name}, Stack trace disponible en consola.`
+                `Error técnico en login con email.`
             );
         } finally {
             setLoading(false);
@@ -339,7 +347,6 @@ const Login = ({ onSuccess, onError }) => {
         
         const retryFn = () => {
             setShowRegister(true);
-            // Re-enviar el formulario
             setTimeout(() => {
                 const form = document.querySelector('form');
                 if (form) {
@@ -350,31 +357,19 @@ const Login = ({ onSuccess, onError }) => {
         
         // Validaciones
         if (password !== confirmPassword) {
-            showError(
-                'Validación fallida: Las contraseñas no coinciden', 
-                retryFn,
-                `Validación de contraseñas falló. Password: ${password.length} caracteres, ConfirmPassword: ${confirmPassword.length} caracteres`
-            );
+            showError('Las contraseñas no coinciden', retryFn);
             setLoading(false);
             return;
         }
         
         if (password.length < 6) {
-            showError(
-                'Validación fallida: Contraseña muy corta', 
-                retryFn,
-                `Validación de longitud de contraseña falló. Longitud actual: ${password.length} caracteres, mínimo requerido: 6`
-            );
+            showError('Contraseña muy corta (mínimo 6 caracteres)', retryFn);
             setLoading(false);
             return;
         }
         
         if (!username || username.length < 3) {
-            showError(
-                'Validación fallida: Username muy corto', 
-                retryFn,
-                `Validación de longitud de username falló. Longitud actual: ${username ? username.length : 0} caracteres, mínimo requerido: 3`
-            );
+            showError('Username muy corto (mínimo 3 caracteres)', retryFn);
             setLoading(false);
             return;
         }
@@ -382,11 +377,7 @@ const Login = ({ onSuccess, onError }) => {
         // Validar que el username solo contenga letras, números y guiones bajos
         const usernameRegex = /^[a-zA-Z0-9_]+$/;
         if (!usernameRegex.test(username)) {
-            showError(
-                'Validación fallida: Username contiene caracteres inválidos', 
-                retryFn,
-                `Validación de formato de username falló. Username: "${username}", regex aplicado: /^[a-zA-Z0-9_]+$/, caracteres permitidos: letras, números y guiones bajos`
-            );
+            showError('Username contiene caracteres inválidos (solo letras, números y _)', retryFn);
             setLoading(false);
             return;
         }
@@ -411,13 +402,13 @@ const Login = ({ onSuccess, onError }) => {
                 showError(
                     `Error del backend: ${data.error}`, 
                     retryFn,
-                    `Backend INIA retornó error en registro. Status: ${result.status}, URL: ${INIA_CONFIG.baseUrl}/oidc/register/, Datos enviados: name="${name}", email="${email}", username="${username}", password=***`
+                    `Backend INIA retornó error en registro. Status: ${result.status}`
                 );
                 return;
             }
             
             // Manejar éxito
-            handleSuccess('¡Bienvenido! Tu cuenta ha sido creada exitosamente', {
+            handleLoginSuccess('¡Bienvenido! Tu cuenta ha sido creada exitosamente', {
                 tokens: data.tokens,
                 name: name,
                 email: email,
@@ -430,7 +421,7 @@ const Login = ({ onSuccess, onError }) => {
             showError(
                 `Error de conexión: ${error.message}`, 
                 retryFn,
-                `Error técnico en registro de usuario. URL: ${INIA_CONFIG.baseUrl}/oidc/register/, Tipo: ${error.name}, Stack trace disponible en consola.`
+                `Error técnico en registro de usuario.`
             );
         } finally {
             setLoading(false);
@@ -440,8 +431,14 @@ const Login = ({ onSuccess, onError }) => {
     return (
         <div className="login-container">
             <div className="login-card">
-                <h1>🌾 Acceder a INIA</h1>
-                <p className="subtitle">Miniapp de Prueba</p>
+                <h1>🌾 INIA SSO</h1>
+                <p className="subtitle">Iniciar Sesión</p>
+                
+                {returnUrl && (
+                    <div className="return-url-info">
+                        <p>Serás redirigido a: <strong>{returnUrl}</strong></p>
+                    </div>
+                )}
                 
                 <div className="login-buttons">
                     {/* Botón oficial de Google */}
@@ -592,4 +589,4 @@ const Login = ({ onSuccess, onError }) => {
     );
 };
 
-export default Login;
+export default SSOLogin;
