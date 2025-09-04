@@ -1,16 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { INIA_CONFIG, saveTokens } from '../config';
 import ErrorOverlay from './ErrorOverlay';
+import EmailConfirmation from './EmailConfirmation';
 import './Login.css';
 
 const SSOLogin = () => {
     const [showEmailLogin, setShowEmailLogin] = useState(false);
     const [showRegister, setShowRegister] = useState(false);
+    const [showPasswords, setShowPasswords] = useState(false);
+    const [acceptTerms, setAcceptTerms] = useState(false);
+    const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+    const [pendingUserData, setPendingUserData] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [loginError, setLoginError] = useState('');
+    const [googleError, setGoogleError] = useState('');
+    const [appleError, setAppleError] = useState('');
+    const [registerError, setRegisterError] = useState('');
     const [currentError, setCurrentError] = useState(null);
     const [retryFunction, setRetryFunction] = useState(null);
     const [errorContext, setErrorContext] = useState(null);
     const [returnUrl, setReturnUrl] = useState(null);
+    const googleButtonInitialized = useRef(false);
 
     // Obtener return_url de los parámetros de la URL
     useEffect(() => {
@@ -28,6 +38,21 @@ const SSOLogin = () => {
         }
     }, []);
 
+    // Efecto para inicializar Google cuando el componente esté montado
+    useEffect(() => {
+        // Pequeño delay para asegurar que el DOM esté listo
+        const timer = setTimeout(() => {
+            console.log('🔍 DEBUG - Verificando Google SDK:', typeof google !== 'undefined');
+            console.log('🔍 DEBUG - Google button initialized:', googleButtonInitialized.current);
+            if (typeof google !== 'undefined' && !googleButtonInitialized.current) {
+                console.log('🔍 DEBUG - Inicializando Google Sign In...');
+                initializeGoogleSignIn();
+            }
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, []);
+
     // Función para mostrar error
     const showError = (error, retryFn = null, context = null) => {
         setCurrentError(error);
@@ -40,6 +65,41 @@ const SSOLogin = () => {
         setCurrentError(null);
         setRetryFunction(null);
         setErrorContext(null);
+    };
+
+    // Función para mostrar errores específicos
+    const showLoginError = (message) => {
+        setLoginError(message);
+        setTimeout(() => setLoginError(''), 5000);
+    };
+
+    const showGoogleError = (message) => {
+        setGoogleError(message);
+        setTimeout(() => setGoogleError(''), 5000);
+    };
+
+    const showAppleError = (message) => {
+        setAppleError(message);
+        setTimeout(() => setAppleError(''), 5000);
+    };
+
+    const showRegisterError = (message) => {
+        setRegisterError(message);
+        setTimeout(() => setRegisterError(''), 5000);
+    };
+
+    // Función para manejar éxito de confirmación de email
+    const handleEmailConfirmationSuccess = (userInfo) => {
+        handleLoginSuccess(userInfo);
+        setShowEmailConfirmation(false);
+        setPendingUserData(null);
+    };
+
+    // Función para volver del formulario de confirmación
+    const handleBackFromConfirmation = () => {
+        setShowEmailConfirmation(false);
+        setPendingUserData(null);
+        setShowRegister(true);
     };
 
     // Función para manejar éxito del login
@@ -167,6 +227,12 @@ const SSOLogin = () => {
                 return;
             }
 
+            // Solo inicializar si no se ha hecho antes
+            if (googleButtonInitialized.current) {
+                console.log('Google Sign In ya inicializado, saltando...');
+                return;
+            }
+
             // Inicializar Google Sign In
             const config = {
                 client_id: INIA_CONFIG.googleClientId,
@@ -196,9 +262,12 @@ const SSOLogin = () => {
                     text: 'signin_with',
                     shape: 'rectangular',
                     logo_alignment: 'left',
-                    width: 300,
+                    width: '100%',
                     type: 'standard'
                 });
+                
+                googleButtonInitialized.current = true;
+                console.log('Botón de Google inicializado');
             }
 
         } catch (error) {
@@ -246,11 +315,7 @@ const SSOLogin = () => {
             const data = await result.json();
             
             if (data.error) {
-                showError(
-                    `Error del backend: ${data.error}`, 
-                    null, // No retry para errores del backend
-                    `Backend INIA retornó error. Status: ${result.status}`
-                );
+                showGoogleError(`Error: ${data.error}`);
                 return;
             }
             
@@ -265,11 +330,7 @@ const SSOLogin = () => {
             
         } catch (error) {
             console.error('Error en callback de Google:', error);
-            showError(
-                `Error al procesar respuesta de Google: ${error.message}`, 
-                null, // No retry para errores técnicos
-                `Error técnico en el procesamiento del callback de Google.`
-            );
+            showGoogleError(`Error: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -281,11 +342,7 @@ const SSOLogin = () => {
             setLoading(true);
             
             if (typeof AppleID === 'undefined') {
-                showError(
-                    'Apple Sign In SDK no está disponible', 
-                    handleAppleLogin,
-                    'El script de Apple Sign In no se ha cargado correctamente.'
-                );
+                showAppleError('Apple Sign In SDK no está disponible');
                 return;
             }
             
@@ -318,11 +375,7 @@ const SSOLogin = () => {
             const response = await result.json();
             
             if (response.error) {
-                showError(
-                    `Error del backend: ${response.error}`, 
-                    handleAppleLogin,
-                    `Backend INIA retornó error. Status: ${result.status}`
-                );
+                showAppleError(`Error: ${response.error}`);
                 return;
             }
             
@@ -337,11 +390,7 @@ const SSOLogin = () => {
             
         } catch (error) {
             console.error('Error en Apple Sign In:', error);
-            showError(
-                `Error al procesar Apple Sign In: ${error.message}`, 
-                handleAppleLogin,
-                `Error técnico en Apple Sign In.`
-            );
+            showAppleError(`Error: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -381,11 +430,7 @@ const SSOLogin = () => {
             const data = await result.json();
             
             if (data.error) {
-                showError(
-                    `Error del backend: ${data.error}`, 
-                    retryFn,
-                    `Backend INIA retornó error en login. Status: ${result.status}`
-                );
+                showLoginError(`Error: ${data.error}`);
                 return;
             }
             
@@ -401,11 +446,7 @@ const SSOLogin = () => {
             
         } catch (error) {
             console.error('Error en login:', error);
-            showError(
-                `Error de conexión: ${error.message}`, 
-                retryFn,
-                `Error técnico en login con email.`
-            );
+            showLoginError(`Error de conexión: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -435,19 +476,19 @@ const SSOLogin = () => {
         
         // Validaciones
         if (password !== confirmPassword) {
-            showError('Las contraseñas no coinciden', retryFn);
+            showRegisterError('Las contraseñas no coinciden');
             setLoading(false);
             return;
         }
         
         if (password.length < 6) {
-            showError('Contraseña muy corta (mínimo 6 caracteres)', retryFn);
+            showRegisterError('Contraseña muy corta (mínimo 6 caracteres)');
             setLoading(false);
             return;
         }
         
         if (!username || username.length < 3) {
-            showError('Username muy corto (mínimo 3 caracteres)', retryFn);
+            showRegisterError('Username muy corto (mínimo 3 caracteres)');
             setLoading(false);
             return;
         }
@@ -455,7 +496,13 @@ const SSOLogin = () => {
         // Validar que el username solo contenga letras, números y guiones bajos
         const usernameRegex = /^[a-zA-Z0-9_]+$/;
         if (!usernameRegex.test(username)) {
-            showError('Username contiene caracteres inválidos (solo letras, números y _)', retryFn);
+            showRegisterError('Username contiene caracteres inválidos (solo letras, números y _)');
+            setLoading(false);
+            return;
+        }
+        
+        if (!acceptTerms) {
+            showRegisterError('Debes aceptar los términos y condiciones');
             setLoading(false);
             return;
         }
@@ -477,11 +524,18 @@ const SSOLogin = () => {
             const data = await result.json();
             
             if (data.error) {
-                showError(
-                    `Error del backend: ${data.error}`, 
-                    retryFn,
-                    `Backend INIA retornó error en registro. Status: ${result.status}`
-                );
+                showRegisterError(`Error: ${data.error}`);
+                return;
+            }
+            
+            // Verificar si se requiere confirmación de email
+            if (data.action === 'email_confirmation_required') {
+                setPendingUserData({
+                    user_id: data.user_id,
+                    email: data.email
+                });
+                setShowEmailConfirmation(true);
+                setShowRegister(false);
                 return;
             }
             
@@ -497,163 +551,271 @@ const SSOLogin = () => {
             
         } catch (error) {
             console.error('Error en registro:', error);
-            showError(
-                `Error de conexión: ${error.message}`, 
-                retryFn,
-                `Error técnico en registro de usuario.`
-            );
+            showRegisterError(`Error de conexión: ${error.message}`);
         } finally {
             setLoading(false);
         }
     };
 
+    // Si se está mostrando la confirmación de email
+    if (showEmailConfirmation && pendingUserData) {
+        return (
+            <EmailConfirmation
+                userData={pendingUserData}
+                onSuccess={handleEmailConfirmationSuccess}
+                onBack={handleBackFromConfirmation}
+            />
+        );
+    }
+
     return (
         <div className="login-container">
             <div className="login-card">
-                <h1>🌾 INIA SSO</h1>
-                <p className="subtitle">Iniciar Sesión</p>
-                
-                {returnUrl && (
-                    <div className="return-url-info">
-                        <p>Serás redirigido a: <strong>{returnUrl}</strong></p>
-                    </div>
+                {/* Botón de retorno para registro */}
+                {showRegister && (
+                    <button 
+                        className="back-btn" 
+                        onClick={() => setShowRegister(false)}
+                        disabled={loading}
+                        tabIndex={-1}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                        </svg>
+                    </button>
                 )}
                 
-                <div className="login-buttons">
-                    {/* Botón oficial de Google */}
-                    <div id="google-signin-button" className="google-button-container"></div>
-                    
-                    {/* Botón Apple */}
-                    <button 
-                        className="login-btn apple-btn" 
-                        onClick={handleAppleLogin}
-                        disabled={loading}
-                    >
-                        <img src="https://developer.apple.com/assets/elements/icons/sign-in-with-apple/sign-in-with-apple-black.png" alt="Apple" width="20" />
-                        Continuar con Apple
-                    </button>
-                    
-                    {/* Botón Login con Email/Username */}
-                    <button 
-                        className="login-btn email-btn" 
-                        onClick={() => setShowEmailLogin(true)}
-                        disabled={loading}
-                    >
-                        📧 Login con Email/Username
-                    </button>
-                    
-                    {/* Botón Registrarse */}
-                    <button 
-                        className="login-btn register-btn" 
-                        onClick={() => setShowRegister(true)}
-                        disabled={loading}
-                    >
-                        ✏️ Registrarse
-                    </button>
+                {/* Logo INIA */}
+                <div className="logo-container">
+                    <img src="/inia-logo.png" alt="INIA" className="inia-logo" />
                 </div>
                 
-                <p className="info-text">
-                    Al hacer clic en Google/Apple, se creará tu cuenta automáticamente si no existe
-                </p>
-                
-                {loading && (
-                    <div className="loading">
-                        <div className="spinner"></div>
-                        <p>Procesando...</p>
-                    </div>
-                )}
-            </div>
-
-            {/* Modal para Login con Email */}
-            {showEmailLogin && (
-                <div className="modal-overlay" onClick={() => setShowEmailLogin(false)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <h2>Login con Email/Username</h2>
-                        <form onSubmit={handleEmailLogin}>
-                            <input 
-                                type="text" 
-                                name="email" 
-                                placeholder="Email o Username" 
-                                required 
-                                disabled={loading}
-                            />
-                            <input 
-                                type="password" 
-                                name="password" 
-                                placeholder="Contraseña" 
-                                required 
-                                disabled={loading}
-                            />
-                            <button type="submit" disabled={loading}>
-                                {loading ? 'Iniciando...' : 'Iniciar Sesión'}
+                {!showRegister ? (
+                    <>
+                        {/* Formulario de Login Principal */}
+                        <form onSubmit={handleEmailLogin} className="main-login-form">
+                            <div className="form-group">
+                                <input 
+                                    type="text" 
+                                    name="email" 
+                                    placeholder="Email o Username" 
+                                    required 
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="form-group password-group">
+                                <input 
+                                    type={showPasswords ? "text" : "password"} 
+                                    name="password" 
+                                    placeholder="Contraseña" 
+                                    required 
+                                    disabled={loading}
+                                    className="form-input"
+                                />
+                                <button 
+                                    type="button"
+                                    className="password-toggle"
+                                    onClick={() => setShowPasswords(!showPasswords)}
+                                    disabled={loading}
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                        {showPasswords ? (
+                                            <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+                                        ) : (
+                                            <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                        )}
+                                    </svg>
+                                </button>
+                            </div>
+                            <button type="submit" className="login-submit-btn" disabled={loading}>
+                                {loading ? (
+                                    <>
+                                        Iniciando...
+                                        <div className="button-spinner"></div>
+                                    </>
+                                ) : 'Iniciar Sesión'}
                             </button>
                         </form>
-                        <button 
-                            className="close-btn" 
-                            onClick={() => setShowEmailLogin(false)}
-                            disabled={loading}
-                        >
-                            Cerrar
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal para Registro */}
-            {showRegister && (
-                <div className="modal-overlay" onClick={() => setShowRegister(false)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <h2>Crear Cuenta</h2>
-                        <form onSubmit={handleRegister}>
+                        
+                        {/* Error de login */}
+                        {loginError && (
+                            <div className="error-message">
+                                {loginError}
+                            </div>
+                        )}
+                        
+                        {/* Botones Sociales */}
+                        <div className="social-login-section">
+                            {/* Botón oficial de Google */}
+                            <div id="google-signin-button" className={`google-button-container ${loading ? 'disabled' : ''}`}></div>
+                            
+                            {/* Error de Google */}
+                            {googleError && (
+                                <div className="error-message">
+                                    {googleError}
+                                </div>
+                            )}
+                            
+                            {/* Botón Apple */}
+                            <button 
+                                className="social-btn apple-btn" 
+                                onClick={handleAppleLogin}
+                                disabled={loading}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                                </svg>
+                                Iniciar sesión con Apple
+                            </button>
+                            
+                            {/* Error de Apple */}
+                            {appleError && (
+                                <div className="error-message">
+                                    {appleError}
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Botón Registro */}
+                        <div className="register-section">
+                            <button 
+                                className="register-btn" 
+                                onClick={() => setShowRegister(true)}
+                                disabled={loading}
+                            >
+                                ¿No tienes cuenta? Regístrate
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    /* Formulario de Registro */
+                    <form onSubmit={handleRegister} className="main-login-form">
+                        <div className="form-group">
                             <input 
                                 type="text" 
                                 name="name" 
                                 placeholder="Nombre completo" 
                                 required 
                                 disabled={loading}
+                                className="form-input"
                             />
+                        </div>
+                        <div className="form-group">
                             <input 
                                 type="email" 
                                 name="email" 
                                 placeholder="Email" 
                                 required 
                                 disabled={loading}
+                                className="form-input"
                             />
+                        </div>
+                        <div className="form-group">
                             <input 
                                 type="text" 
                                 name="username" 
-                                placeholder="Username (solo letras, números y _)" 
+                                placeholder="Username" 
                                 required 
                                 disabled={loading}
+                                className="form-input"
                             />
+                        </div>
+                        <div className="form-group password-group">
                             <input 
-                                type="password" 
+                                type={showPasswords ? "text" : "password"} 
                                 name="password" 
-                                placeholder="Contraseña (mínimo 6 caracteres)" 
+                                placeholder="Contraseña" 
                                 required 
                                 disabled={loading}
+                                className="form-input"
                             />
+                            <button 
+                                type="button"
+                                className="password-toggle"
+                                onClick={() => setShowPasswords(!showPasswords)}
+                                disabled={loading}
+                                tabIndex={-1}
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    {showPasswords ? (
+                                        <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+                                    ) : (
+                                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                    )}
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="form-group password-group">
                             <input 
-                                type="password" 
+                                type={showPasswords ? "text" : "password"} 
                                 name="confirmPassword" 
                                 placeholder="Confirmar contraseña" 
                                 required 
                                 disabled={loading}
+                                className="form-input"
                             />
-                            <button type="submit" disabled={loading}>
-                                {loading ? 'Creando...' : 'Crear Cuenta'}
+                            <button 
+                                type="button"
+                                className="password-toggle"
+                                onClick={() => setShowPasswords(!showPasswords)}
+                                disabled={loading}
+                                tabIndex={-1}
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    {showPasswords ? (
+                                        <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+                                    ) : (
+                                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                    )}
+                                </svg>
                             </button>
-                        </form>
-                        <button 
-                            className="close-btn" 
-                            onClick={() => setShowRegister(false)}
-                            disabled={loading}
-                        >
-                            Cerrar
+                        </div>
+                        {/* Checkbox de términos y condiciones */}
+                        <div className="terms-checkbox">
+                            <label className="checkbox-label">
+                                <input 
+                                    type="checkbox" 
+                                    checked={acceptTerms}
+                                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                                    disabled={loading}
+                                    className="checkbox-input"
+                                />
+                                <span className="checkbox-text">
+                                    Acepto los{' '}
+                                    <a 
+                                        href="https://inia-app-web-test.vercel.app/terms-of-service" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="terms-link"
+                                    >
+                                        términos y condiciones
+                                    </a>
+                                </span>
+                            </label>
+                        </div>
+                        
+                        {/* Error de registro */}
+                        {registerError && (
+                            <div className="error-message">
+                                {registerError}
+                            </div>
+                        )}
+                        
+                        <button type="submit" className="login-submit-btn" disabled={loading || !acceptTerms}>
+                            {loading ? (
+                                <>
+                                    Registrando...
+                                    <div className="button-spinner"></div>
+                                </>
+                            ) : 'Crear Cuenta'}
                         </button>
-                    </div>
-                </div>
-            )}
+                    </form>
+                )}
+                
+            </div>
+
+
 
             {/* Error Overlay */}
             {currentError && (

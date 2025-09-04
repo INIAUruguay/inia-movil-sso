@@ -4,109 +4,297 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('/fondo_pasto.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     padding: 20px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .login-card {
-    background: white;
-    border-radius: 15px;
+    background: #1C2D51;
+    border-radius: 20px;
     padding: 40px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 25px 50px rgba(28, 45, 81, 0.4);
     max-width: 400px;
     width: 100%;
     text-align: center;
+    color: white;
+    position: relative;
 }
 
-.login-card h1 {
-    color: #333;
-    margin-bottom: 10px;
-    font-size: 2.5em;
-    font-weight: 300;
-}
-
-.subtitle {
-    color: #666;
+/* Logo INIA */
+.logo-container {
     margin-bottom: 30px;
-    font-size: 1.1em;
+    position: relative;
 }
 
-.login-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 20px;
+.inia-logo {
+    max-width: 120px;
+    height: auto;
 }
 
-.google-button-container {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-}
-
-.login-btn {
+/* Botón de retorno */
+.back-btn {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 10px;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 15px 20px;
+    z-index: 10;
+}
+
+.back-btn:hover:not(:disabled) {
+    transform: scale(1.1);
+    opacity: 0.8;
+}
+
+.back-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Formulario Principal */
+.main-login-form {
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.password-group {
+    position: relative;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.password-group .form-input {
+    padding-right: 50px;
+}
+
+.form-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: white;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.form-input:disabled {
+    background: rgba(255, 255, 255, 0.05);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Botón de mostrar/ocultar contraseña */
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.password-toggle:hover:not(:disabled) {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.password-toggle:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Mensajes de error */
+.error-message {
+    color: #FF6E6E;
+    font-size: 14px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    text-align: center;
+    padding: 8px 12px;
+    background: rgba(255, 110, 110, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 110, 110, 0.3);
+}
+
+/* Checkbox de términos y condiciones */
+.terms-checkbox {
+    margin: 15px 0;
+    text-align: left;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    cursor: pointer;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.4;
+}
+
+.checkbox-input {
+    margin-right: 10px;
+    margin-top: 2px;
+    width: 16px;
+    height: 16px;
+    accent-color: #1C2D51;
+    cursor: pointer;
+}
+
+.checkbox-text {
+    flex: 1;
+}
+
+.terms-link {
+    color: #D4E3FF;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+
+.terms-link:hover {
+    color: #F2F7FF;
+}
+
+.login-submit-btn {
+    width: 100%;
+    padding: 15px;
+    background: white;
+    color: #1C2D51;
     border: none;
     border-radius: 8px;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    text-decoration: none;
-    color: white;
 }
 
-.login-btn:hover:not(:disabled) {
+.login-submit-btn:hover:not(:disabled) {
+    background: #F2F7FF;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
-.login-btn:disabled {
-    opacity: 0.6;
+.login-submit-btn:disabled {
+    background: rgba(255, 255, 255, 0.3);
     cursor: not-allowed;
     transform: none;
 }
 
-.google-btn {
-    background: #4285f4;
+/* Spinner del botón */
+.button-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(28, 45, 81, 0.3);
+    border-top: 2px solid #1C2D51;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 8px;
+    display: inline-block;
 }
 
-.google-btn:hover:not(:disabled) {
-    background: #3367d6;
+/* Botones Sociales */
+.social-login-section {
+    margin-bottom: 15px;
 }
 
-.apple-btn {
-    background: #000;
+.google-button-container {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
 }
 
-.apple-btn:hover:not(:disabled) {
-    background: #333;
+.social-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
 }
 
-.email-btn {
-    background: #6c757d;
+.social-btn svg {
+    position: absolute;
+    left: 16px;
 }
 
-.email-btn:hover:not(:disabled) {
-    background: #5a6268;
+.social-btn:hover:not(:disabled) {
+    border-color: white;
+    background: rgba(0, 0, 0, 0.9);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.social-btn:disabled {
+    background: rgba(0, 0, 0, 0.3);
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+}
+
+/* Botón de Registro */
+.register-section {
+    text-align: center;
+    margin-bottom: 10px;
 }
 
 .register-btn {
-    background: #28a745;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.3s ease;
 }
 
 .register-btn:hover:not(:disabled) {
-    background: #218838;
+    color: white;
 }
 
-/* Estilos para el botón oficial de Google */
-.google-button-container {
-    margin-bottom: 15px;
+.register-btn:disabled {
+    color: rgba(255, 255, 255, 0.4);
+    cursor: not-allowed;
 }
 
 /* Personalización del botón oficial de Google */
@@ -121,7 +309,6 @@
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* Estilos adicionales para el botón de Google */
 .google-button-container div[role="button"] {
     border-radius: 8px !important;
     transition: all 0.3s ease !important;
@@ -132,28 +319,43 @@
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2) !important;
 }
 
-.info-text {
-    font-size: 14px;
-    color: #666;
-    margin-top: 20px;
-    line-height: 1.5;
+/* Hacer el texto del botón de Google bold */
+.google-button-container div[role="button"] span {
+    font-weight: bold !important;
 }
 
+/* Deshabilitar botón de Google cuando está loading */
+.google-button-container.disabled {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.google-button-container.disabled iframe {
+    pointer-events: none !important;
+    opacity: 0.5 !important;
+}
+
+.google-button-container.disabled div[role="button"] {
+    pointer-events: none !important;
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+
+/* Loading */
 .loading {
+    text-align: center;
+    color: white;
     margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
 }
 
 .spinner {
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid white;
+    border-radius: 50%;
     width: 30px;
     height: 30px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #007bff;
-    border-radius: 50%;
     animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
 }
 
 @keyframes spin {
@@ -161,7 +363,7 @@
     100% { transform: rotate(360deg); }
 }
 
-/* Estilos para modales */
+/* Modal para Registro */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -173,21 +375,22 @@
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    padding: 20px;
 }
 
 .modal-content {
     background: white;
-    border-radius: 10px;
     padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     max-width: 400px;
-    width: 100%;
+    width: 90%;
     max-height: 90vh;
     overflow-y: auto;
+    position: relative;
 }
 
 .modal-content h2 {
-    color: #333;
+    color: #1B2D4F;
     margin-bottom: 20px;
     text-align: center;
 }
@@ -200,106 +403,154 @@
 
 .modal-content input {
     padding: 12px;
-    border: 2px solid #e1e5e9;
-    border-radius: 6px;
+    border: 2px solid #CDCDCD;
+    border-radius: 8px;
     font-size: 16px;
     transition: border-color 0.3s ease;
 }
 
 .modal-content input:focus {
     outline: none;
-    border-color: #007bff;
-}
-
-.modal-content input:disabled {
-    background-color: #f8f9fa;
-    cursor: not-allowed;
+    border-color: #1B2D4F;
 }
 
 .modal-content button[type="submit"] {
-    background: #007bff;
+    background: #1B2D4F;
     color: white;
     border: none;
     padding: 12px;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
 
 .modal-content button[type="submit"]:hover:not(:disabled) {
-    background: #0056b3;
+    background: #2C4778;
 }
 
 .modal-content button[type="submit"]:disabled {
-    background: #6c757d;
+    background: #CDCDCD;
     cursor: not-allowed;
 }
 
 .close-btn {
-    background: #6c757d;
-    color: white;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
     border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-size: 14px;
+    font-size: 24px;
     cursor: pointer;
-    margin-top: 15px;
-    width: 100%;
-    transition: background-color 0.3s ease;
+    color: #CDCDCD;
+    transition: color 0.3s ease;
 }
 
-.close-btn:hover:not(:disabled) {
-    background: #5a6268;
+.close-btn:hover {
+    color: #1B2D4F;
 }
 
 .close-btn:disabled {
-    background: #adb5bd;
+    color: #CDCDCD;
     cursor: not-allowed;
 }
 
-/* Estilos específicos para SSO */
-.return-url-info {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 15px;
+/* Error Overlay */
+.error-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.error-content {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+}
+
+.error-content h2 {
+    color: #FF6E6E;
+    margin-bottom: 15px;
+}
+
+.error-content p {
+    color: #1B2D4F;
     margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.error-details {
+    background: #F2F7FF;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    font-family: monospace;
+    font-size: 12px;
+    color: #1B2D4F;
     text-align: left;
 }
 
-.return-url-info p {
-    margin: 0;
-    color: #495057;
-    font-size: 0.9em;
+.error-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
 }
 
-.return-url-info strong {
-    color: #007bff;
-    word-break: break-all;
+.error-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.error-btn.primary {
+    background: #1B2D4F;
+    color: white;
+}
+
+.error-btn.primary:hover {
+    background: #2C4778;
+}
+
+.error-btn.secondary {
+    background: #CDCDCD;
+    color: #1B2D4F;
+}
+
+.error-btn.secondary:hover {
+    background: #bfbfbf;
 }
 
 /* Responsive */
 @media (max-width: 480px) {
     .login-card {
-        padding: 30px 20px;
-    }
-    
-    .login-card h1 {
-        font-size: 2em;
-    }
-    
-    .modal-content {
         padding: 20px;
+        margin: 10px;
     }
     
-    .return-url-info {
-        padding: 10px;
+    .social-buttons {
+        flex-direction: column;
+        gap: 10px;
     }
     
-    .return-url-info p {
-        font-size: 0.8em;
+    .google-button-container,
+    .social-btn {
+        flex: none;
     }
 }
-

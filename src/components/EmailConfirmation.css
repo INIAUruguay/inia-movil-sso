@@ -1,0 +1,230 @@
+/* Estilos para el componente de confirmación de email */
+.email-confirmation-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('/fondo_pasto.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.email-confirmation-card {
+    background: #1C2D51;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 25px 50px rgba(28, 45, 81, 0.4);
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    color: white;
+    position: relative;
+}
+
+/* Logo INIA */
+.logo-container {
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.inia-logo {
+    max-width: 120px;
+    height: auto;
+}
+
+/* Botón de retorno */
+.back-btn {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 10px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.back-btn:hover:not(:disabled) {
+    transform: scale(1.1);
+    opacity: 0.8;
+}
+
+.back-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Header de confirmación */
+.confirmation-header {
+    margin-bottom: 30px;
+}
+
+.confirmation-header h2 {
+    margin: 0 0 15px 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: white;
+}
+
+.confirmation-header p {
+    margin: 5px 0;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+}
+
+.email-address {
+    font-weight: 600;
+    color: #D4E3FF !important;
+    font-size: 16px !important;
+}
+
+/* Formulario de código */
+.code-form {
+    margin-bottom: 30px;
+}
+
+.code-inputs {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.code-input {
+    width: 50px;
+    height: 50px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.code-input:focus {
+    border-color: white;
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+.code-input:disabled {
+    background: rgba(255, 255, 255, 0.05);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Mensaje de error */
+.error-message {
+    color: #FF6E6E;
+    font-size: 14px;
+    margin-bottom: 20px;
+    text-align: center;
+    padding: 8px 12px;
+    background: rgba(255, 110, 110, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 110, 110, 0.3);
+}
+
+/* Botón de confirmar */
+.confirm-btn {
+    width: 100%;
+    padding: 15px;
+    background: white;
+    color: #1C2D51;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.confirm-btn:hover:not(:disabled) {
+    background: #F2F7FF;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.confirm-btn:disabled {
+    background: rgba(255, 255, 255, 0.3);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Spinner del botón */
+.button-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(28, 45, 81, 0.3);
+    border-top: 2px solid #1C2D51;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Sección de reenvío */
+.resend-section {
+    text-align: center;
+}
+
+.resend-section p {
+    margin: 0 0 10px 0;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+}
+
+.resend-btn {
+    background: none;
+    border: none;
+    color: #D4E3FF;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.3s ease;
+}
+
+.resend-btn:hover:not(:disabled) {
+    color: #F2F7FF;
+}
+
+.resend-btn:disabled {
+    color: rgba(255, 255, 255, 0.4);
+    cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .email-confirmation-card {
+        padding: 30px 20px;
+    }
+    
+    .code-inputs {
+        gap: 8px;
+    }
+    
+    .code-input {
+        width: 45px;
+        height: 45px;
+        font-size: 20px;
+    }
+}
