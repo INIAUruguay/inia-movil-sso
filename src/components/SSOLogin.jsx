@@ -67,8 +67,30 @@ const SSOLogin = () => {
             // Redirigir
             window.location.href = url.toString();
         } else {
-            // Si no hay return_url, mostrar mensaje de error
-            showError('Login exitoso, pero no se especificó una URL de retorno');
+            // Si no hay return_url, redirigir a la página principal con los tokens
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('access_token', userInfo.tokens.access_token);
+            currentUrl.searchParams.set('id_token', userInfo.tokens.id_token);
+            currentUrl.searchParams.set('token_type', userInfo.tokens.token_type);
+            currentUrl.searchParams.set('expires_in', userInfo.tokens.expires_in);
+            currentUrl.searchParams.set('scope', userInfo.tokens.scope);
+            
+            // Agregar información del usuario
+            if (userInfo.user_id) {
+                currentUrl.searchParams.set('user_id', userInfo.user_id);
+            }
+            if (userInfo.name) {
+                currentUrl.searchParams.set('name', userInfo.name);
+            }
+            if (userInfo.email) {
+                currentUrl.searchParams.set('email', userInfo.email);
+            }
+            if (userInfo.username) {
+                currentUrl.searchParams.set('username', userInfo.username);
+            }
+            
+            // Redirigir a la misma página con los tokens
+            window.location.href = currentUrl.toString();
         }
     };
 
