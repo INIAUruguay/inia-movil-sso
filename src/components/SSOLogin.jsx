@@ -162,17 +162,21 @@ const SSOLogin = () => {
             }
 
             // Inicializar Google Sign In
-            google.accounts.id.initialize({
+            const config = {
                 client_id: INIA_CONFIG.googleClientId,
                 callback: handleGoogleCallback,
                 auto_select: false,
                 cancel_on_tap_outside: true,
                 use_fedcm_for_prompt: false,
                 itp_support: false,
-                context: 'signin',
-                ux_mode: 'redirect',
-                state: 'random_state_string'
-            });
+                context: 'signin'
+            };
+
+            // Usar popup por defecto para evitar problemas de redirect_uri
+            // En producción, puedes cambiar a 'redirect' si tienes las URIs configuradas
+            config.ux_mode = 'popup';
+            
+            google.accounts.id.initialize(config);
 
             // Renderizar el botón de Google directamente
             const buttonDiv = document.getElementById('google-signin-button');
