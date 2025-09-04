@@ -47,15 +47,21 @@ const SSOLogin = () => {
         // Guardar tokens
         saveTokens(userInfo.tokens);
         
-        console.log('🔍 DEBUG - returnUrl:', returnUrl);
+        // Obtener return_url directamente de la URL actual (más confiable que el estado)
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnUrlParam = urlParams.get('return_url');
+        const currentReturnUrl = returnUrlParam ? decodeURIComponent(returnUrlParam) : null;
+        
+        console.log('🔍 DEBUG - returnUrl (estado):', returnUrl);
+        console.log('🔍 DEBUG - returnUrl (URL directa):', currentReturnUrl);
         console.log('🔍 DEBUG - userInfo:', userInfo);
         
         // Redirigir al return_url con los tokens y info del usuario (sin popup)
-        if (returnUrl) {
-            console.log('✅ Redirigiendo a return_url:', returnUrl);
+        if (currentReturnUrl) {
+            console.log('✅ Redirigiendo a return_url:', currentReturnUrl);
             
             // Crear URL con los tokens y info del usuario como parámetros
-            const url = new URL(returnUrl);
+            const url = new URL(currentReturnUrl);
             url.searchParams.set('access_token', userInfo.tokens.access_token);
             url.searchParams.set('id_token', userInfo.tokens.id_token);
             url.searchParams.set('token_type', userInfo.tokens.token_type);
