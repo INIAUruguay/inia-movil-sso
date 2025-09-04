@@ -40,15 +40,29 @@ const SSOLogin = () => {
         // Guardar tokens
         saveTokens(userInfo.tokens);
         
-        // Redirigir al return_url con los tokens (sin popup)
+        // Redirigir al return_url con los tokens y info del usuario (sin popup)
         if (returnUrl) {
-            // Crear URL con los tokens como parámetros
+            // Crear URL con los tokens y info del usuario como parámetros
             const url = new URL(returnUrl);
             url.searchParams.set('access_token', userInfo.tokens.access_token);
             url.searchParams.set('id_token', userInfo.tokens.id_token);
             url.searchParams.set('token_type', userInfo.tokens.token_type);
             url.searchParams.set('expires_in', userInfo.tokens.expires_in);
             url.searchParams.set('scope', userInfo.tokens.scope);
+            
+            // Agregar información del usuario (como en el backend)
+            if (userInfo.user_id) {
+                url.searchParams.set('user_id', userInfo.user_id);
+            }
+            if (userInfo.name) {
+                url.searchParams.set('name', userInfo.name);
+            }
+            if (userInfo.email) {
+                url.searchParams.set('email', userInfo.email);
+            }
+            if (userInfo.username) {
+                url.searchParams.set('username', userInfo.username);
+            }
             
             // Redirigir
             window.location.href = url.toString();
@@ -173,8 +187,10 @@ const SSOLogin = () => {
             // Manejar éxito (sin mensaje)
             handleLoginSuccess({
                 tokens: data.tokens,
-                name: payload.name,
-                email: payload.email
+                user_id: data.user?.id || null,
+                name: data.user?.name || payload.name,
+                email: data.user?.email || payload.email,
+                username: data.user?.username || null
             });
             
         } catch (error) {
@@ -243,8 +259,10 @@ const SSOLogin = () => {
             // Manejar éxito (sin mensaje)
             handleLoginSuccess({
                 tokens: response.tokens,
-                name: data.user ? `${data.user.name.firstName} ${data.user.name.lastName}` : null,
-                email: data.user ? data.user.email : null
+                user_id: response.user?.id || null,
+                name: response.user?.name || (data.user ? `${data.user.name.firstName} ${data.user.name.lastName}` : null),
+                email: response.user?.email || (data.user ? data.user.email : null),
+                username: response.user?.username || null
             });
             
         } catch (error) {
@@ -304,7 +322,10 @@ const SSOLogin = () => {
             // Manejar éxito (sin mensaje)
             handleLoginSuccess({
                 tokens: data.tokens,
-                email: email
+                user_id: data.user?.id || null,
+                name: data.user?.name || null,
+                email: data.user?.email || email,
+                username: data.user?.username || null
             });
             setShowEmailLogin(false);
             
@@ -397,9 +418,10 @@ const SSOLogin = () => {
             // Manejar éxito (sin mensaje)
             handleLoginSuccess({
                 tokens: data.tokens,
-                name: name,
-                email: email,
-                username: username
+                user_id: data.user?.id || null,
+                name: data.user?.name || name,
+                email: data.user?.email || email,
+                username: data.user?.username || username
             });
             setShowRegister(false);
             
