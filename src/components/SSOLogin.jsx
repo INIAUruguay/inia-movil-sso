@@ -16,8 +16,15 @@ const SSOLogin = () => {
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const returnUrlParam = urlParams.get('return_url');
+        console.log('🔍 DEBUG - URL actual:', window.location.href);
+        console.log('🔍 DEBUG - return_url param:', returnUrlParam);
+        
         if (returnUrlParam) {
-            setReturnUrl(decodeURIComponent(returnUrlParam));
+            const decodedUrl = decodeURIComponent(returnUrlParam);
+            console.log('🔍 DEBUG - return_url decodificado:', decodedUrl);
+            setReturnUrl(decodedUrl);
+        } else {
+            console.log('⚠️ No se encontró return_url en la URL');
         }
     }, []);
 
@@ -40,8 +47,13 @@ const SSOLogin = () => {
         // Guardar tokens
         saveTokens(userInfo.tokens);
         
+        console.log('🔍 DEBUG - returnUrl:', returnUrl);
+        console.log('🔍 DEBUG - userInfo:', userInfo);
+        
         // Redirigir al return_url con los tokens y info del usuario (sin popup)
         if (returnUrl) {
+            console.log('✅ Redirigiendo a return_url:', returnUrl);
+            
             // Crear URL con los tokens y info del usuario como parámetros
             const url = new URL(returnUrl);
             url.searchParams.set('access_token', userInfo.tokens.access_token);
@@ -63,6 +75,8 @@ const SSOLogin = () => {
             if (userInfo.username) {
                 url.searchParams.set('username', userInfo.username);
             }
+            
+            console.log('🚀 URL final de redirección:', url.toString());
             
             // Redirigir
             window.location.href = url.toString();
@@ -156,7 +170,8 @@ const SSOLogin = () => {
                 use_fedcm_for_prompt: false,
                 itp_support: false,
                 context: 'signin',
-                ux_mode: 'popup'
+                ux_mode: 'redirect',
+                state: 'random_state_string'
             });
 
             // Renderizar el botón de Google directamente
@@ -171,7 +186,7 @@ const SSOLogin = () => {
                     text: 'signin_with',
                     shape: 'rectangular',
                     logo_alignment: 'left',
-                    width: '100%',
+                    width: 300,
                     type: 'standard'
                 });
             }

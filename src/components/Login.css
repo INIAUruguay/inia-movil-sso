@@ -39,6 +39,12 @@
     margin-bottom: 20px;
 }
 
+.google-button-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
 .login-btn {
     display: flex;
     align-items: center;
