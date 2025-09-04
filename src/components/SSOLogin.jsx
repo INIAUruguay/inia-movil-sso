@@ -67,30 +67,37 @@ const SSOLogin = () => {
             // Redirigir
             window.location.href = url.toString();
         } else {
-            // Si no hay return_url, redirigir a la página principal con los tokens
-            const currentUrl = new URL(window.location.href);
-            currentUrl.searchParams.set('access_token', userInfo.tokens.access_token);
-            currentUrl.searchParams.set('id_token', userInfo.tokens.id_token);
-            currentUrl.searchParams.set('token_type', userInfo.tokens.token_type);
-            currentUrl.searchParams.set('expires_in', userInfo.tokens.expires_in);
-            currentUrl.searchParams.set('scope', userInfo.tokens.scope);
+            // Si no hay return_url, mostrar mensaje de éxito y recargar la página
+            console.log('Login exitoso:', userInfo);
             
-            // Agregar información del usuario
-            if (userInfo.user_id) {
-                currentUrl.searchParams.set('user_id', userInfo.user_id);
-            }
-            if (userInfo.name) {
-                currentUrl.searchParams.set('name', userInfo.name);
-            }
-            if (userInfo.email) {
-                currentUrl.searchParams.set('email', userInfo.email);
-            }
-            if (userInfo.username) {
-                currentUrl.searchParams.set('username', userInfo.username);
-            }
+            // Mostrar mensaje de éxito temporal
+            const successMessage = document.createElement('div');
+            successMessage.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #4CAF50;
+                color: white;
+                padding: 15px 20px;
+                border-radius: 5px;
+                z-index: 10000;
+                font-family: Arial, sans-serif;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            `;
+            successMessage.textContent = '¡Login exitoso! Redirigiendo...';
+            document.body.appendChild(successMessage);
             
-            // Redirigir a la misma página con los tokens
-            window.location.href = currentUrl.toString();
+            // Remover el mensaje después de 3 segundos
+            setTimeout(() => {
+                if (successMessage.parentNode) {
+                    successMessage.parentNode.removeChild(successMessage);
+                }
+            }, 3000);
+            
+            // Recargar la página para mostrar el estado autenticado
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         }
     };
 
@@ -148,7 +155,8 @@ const SSOLogin = () => {
                 cancel_on_tap_outside: true,
                 use_fedcm_for_prompt: false,
                 itp_support: false,
-                context: 'signin'
+                context: 'signin',
+                ux_mode: 'popup'
             });
 
             // Renderizar el botón de Google directamente
@@ -163,7 +171,8 @@ const SSOLogin = () => {
                     text: 'signin_with',
                     shape: 'rectangular',
                     logo_alignment: 'left',
-                    width: '100%'
+                    width: '100%',
+                    type: 'standard'
                 });
             }
 
@@ -177,8 +186,18 @@ const SSOLogin = () => {
         try {
             setLoading(true);
             
+            // Verificar que la respuesta sea válida
+            if (!response || !response.credential) {
+                throw new Error('Respuesta inválida de Google');
+            }
+            
             // Decodificar la respuesta de Google
             const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            
+            // Verificar que el payload sea válido
+            if (!payload.email) {
+                throw new Error('Email no encontrado en la respuesta de Google');
+            }
             
             // Enviar a backend INIA
             const result = await fetch(`${INIA_CONFIG.baseUrl}/oidc/social-login/`, {
@@ -195,12 +214,16 @@ const SSOLogin = () => {
                 })
             });
             
+            if (!result.ok) {
+                throw new Error(`Error del servidor: ${result.status}`);
+            }
+            
             const data = await result.json();
             
             if (data.error) {
                 showError(
                     `Error del backend: ${data.error}`, 
-                    handleGoogleCallback,
+                    null, // No retry para errores del backend
                     `Backend INIA retornó error. Status: ${result.status}`
                 );
                 return;
@@ -219,7 +242,7 @@ const SSOLogin = () => {
             console.error('Error en callback de Google:', error);
             showError(
                 `Error al procesar respuesta de Google: ${error.message}`, 
-                handleGoogleCallback,
+                null, // No retry para errores técnicos
                 `Error técnico en el procesamiento del callback de Google.`
             );
         } finally {
