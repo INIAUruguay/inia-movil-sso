@@ -8,21 +8,21 @@ export const INIA_CONFIG = {
     clientSecret: 'c792c7de465b00126292ea68cc5fbf5ce491a64c6c26fad8509b3419',
     
     // URLs de callback
-    redirectUri: 'https://inia-movilo-sso.vercel.app/auth/callback',
-    logoutUri: 'https://inia-movilo-sso.vercel.app/logout',
+    redirectUri: 'https://inia-movil-sso.vercel.app/auth/callback',
+    logoutUri: 'https://inia-movil-sso.vercel.app/logout',
     
     // Scopes necesarios
     scope: 'openid profile email',
     
     // Configuración de Google (obtener de Google Cloud Console)
-    // ⚠️ NECESITAS CREAR TU PROPIO CLIENT ID DE GOOGLE
-    // El Client ID temporal no funciona porque no está autorizado para tu dominio
-    googleClientId: '1090482067186-fim5udv24sdibvjvf6q9dfl0s3j9hqhk.apps.googleusercontent.com', // ⚠️ REEMPLAZAR CON TU CLIENT ID
-    // googleClientId: '549996348904-5j8m810ig5por1krvromsjuhc3i18l8e.apps.googleusercontent.com', // Client ID temporal (no funciona)
-    // googleClientId: '1090482067186-aqo1fs1k6utu1k55t94qq13vp2sv7gom.apps.googleusercontent.com', // Tu Client ID de React Native (no funciona para web)
+    googleClientId: '1090482067186-fim5udv24sdibvjvf6q9dfl0s3j9hqhk.apps.googleusercontent.com',
     
     // Configuración de Apple (obtener de Apple Developer)
-    appleClientId: 'TU_APPLE_CLIENT_ID', // Reemplazar con tu Apple Client ID
+    appleClientId: 'com.inia.app',
+    
+    // Configuración de tokens
+    tokenExpiryBuffer: 300, // 5 minutos antes de expirar
+    refreshCheckInterval: 5 * 60 * 1000, // Verificar cada 5 minutos
 };
 
 // Función para mostrar mensajes
@@ -79,6 +79,11 @@ export const saveTokens = (tokens) => {
     localStorage.setItem('inia_expires_in', tokens.expires_in);
     localStorage.setItem('inia_scope', tokens.scope);
     
+    // Guardar refresh token si existe
+    if (tokens.refresh_token) {
+        localStorage.setItem('inia_refresh_token', tokens.refresh_token);
+    }
+    
     // Guardar timestamp de expiración
     const expiresAt = Date.now() + (tokens.expires_in * 1000);
     localStorage.setItem('inia_expires_at', expiresAt);
@@ -89,6 +94,7 @@ export const getTokens = () => {
     const accessToken = localStorage.getItem('inia_access_token');
     const idToken = localStorage.getItem('inia_id_token');
     const tokenType = localStorage.getItem('inia_token_type');
+    const refreshToken = localStorage.getItem('inia_refresh_token');
     const expiresAt = localStorage.getItem('inia_expires_at');
     
     if (!accessToken || !idToken) {
@@ -104,7 +110,8 @@ export const getTokens = () => {
     return {
         access_token: accessToken,
         id_token: idToken,
-        token_type: tokenType
+        token_type: tokenType,
+        refresh_token: refreshToken
     };
 };
 
@@ -115,6 +122,7 @@ export const clearTokens = () => {
     localStorage.removeItem('inia_token_type');
     localStorage.removeItem('inia_expires_in');
     localStorage.removeItem('inia_scope');
+    localStorage.removeItem('inia_refresh_token');
     localStorage.removeItem('inia_expires_at');
 };
 
@@ -128,5 +136,117 @@ export const redirectAfterLogin = () => {
     const returnUrl = localStorage.getItem('inia_return_url') || '/dashboard';
     localStorage.removeItem('inia_return_url');
     window.location.href = returnUrl;
+};
+
+// Función para verificar si un token está próximo a expirar
+export const isTokenExpiringSoon = (bufferSeconds = INIA_CONFIG.tokenExpiryBuffer) => {
+    const expiresAt = localStorage.getItem('inia_expires_at');
+    if (!expiresAt) return true;
+    
+    const now = Date.now();
+    const expiryTime = parseInt(expiresAt);
+    const bufferTime = bufferSeconds * 1000;
+    
+    return (now + bufferTime) >= expiryTime;
+};
+
+// Función para renovar access token usando refresh token
+export const refreshAccessToken = async () => {
+    const refreshToken = localStorage.getItem('inia_refresh_token');
+    if (!refreshToken) {
+        console.warn('No hay refresh token disponible');
+        return null;
+    }
+
+    try {
+        const response = await fetch(`${INIA_CONFIG.baseUrl}/oidc/refresh/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                refresh_token: refreshToken,
+                client_id: INIA_CONFIG.clientId,
+                client_secret: INIA_CONFIG.clientSecret
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error del servidor: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        // Guardar los nuevos tokens
+        saveTokens(data.tokens);
+        
+        console.log('✅ Token renovado exitosamente');
+        return data.tokens.access_token;
+
+    } catch (error) {
+        console.error('❌ Error renovando token:', error);
+        // Si falla la renovación, limpiar tokens y redirigir a login
+        clearTokens();
+        return null;
+    }
+};
+
+// Función para hacer requests autenticados con renovación automática
+export const makeAuthenticatedRequest = async (url, options = {}) => {
+    let accessToken = localStorage.getItem('inia_access_token');
+    
+    // Verificar si el token está próximo a expirar
+    if (isTokenExpiringSoon()) {
+        console.log('🔄 Token próximo a expirar, renovando...');
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+            accessToken = newToken;
+        } else {
+            // Si no se pudo renovar, redirigir a login
+            window.location.href = '/';
+            return;
+        }
+    }
+
+    return fetch(url, {
+        ...options,
+        headers: {
+            ...options.headers,
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+};
+
+// Función para configurar renovación automática de tokens
+export const setupTokenRefresh = () => {
+    // Verificar tokens cada X minutos
+    setInterval(async () => {
+        const tokens = getTokens();
+        if (!tokens) return;
+
+        if (isTokenExpiringSoon()) {
+            console.log('🔄 Renovando token automáticamente...');
+            await refreshAccessToken();
+        }
+    }, INIA_CONFIG.refreshCheckInterval);
+};
+
+// Función para generar state parameter para OIDC
+export const generateState = () => {
+    const state = Math.random().toString(36).substring(2, 15) + 
+                  Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('inia_oidc_state', state);
+    return state;
+};
+
+// Función para validar state parameter
+export const validateState = (receivedState) => {
+    const storedState = localStorage.getItem('inia_oidc_state');
+    localStorage.removeItem('inia_oidc_state');
+    return storedState === receivedState;
 };
 

@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
     INIA_CONFIG, 
-    saveTokens, 
-    generateState, 
-    validateState,
+    generateState,
     setupTokenRefresh 
 } from '../config';
 import ErrorOverlay from './ErrorOverlay';
 import EmailConfirmation from './EmailConfirmation';
 import './Login.css';
 
-const SSOLogin = () => {
+const OIDCLogin = () => {
     const [showEmailLogin, setShowEmailLogin] = useState(false);
     const [showRegister, setShowRegister] = useState(false);
     const [showPasswords, setShowPasswords] = useState(false);
@@ -118,91 +116,28 @@ const SSOLogin = () => {
         setShowRegister(true);
     };
 
-    // Función para manejar éxito del login
+    // Función para iniciar flujo OIDC
+    const startOIDCFlow = () => {
+        const state = generateState();
+        const returnUrlParam = returnUrl ? encodeURIComponent(returnUrl) : '';
+        
+        const authUrl = new URL(`${INIA_CONFIG.baseUrl}/oidc/authorize/`);
+        authUrl.searchParams.set('response_type', 'code');
+        authUrl.searchParams.set('client_id', INIA_CONFIG.clientId);
+        authUrl.searchParams.set('redirect_uri', INIA_CONFIG.redirectUri);
+        authUrl.searchParams.set('scope', INIA_CONFIG.scope);
+        authUrl.searchParams.set('state', state);
+        authUrl.searchParams.set('return_url', returnUrlParam);
+        
+        console.log('🚀 Iniciando flujo OIDC:', authUrl.toString());
+        window.location.href = authUrl.toString();
+    };
+
+    // Función para manejar éxito del login (para compatibilidad con flujo directo)
     const handleLoginSuccess = (userInfo) => {
-        // Guardar tokens (incluyendo refresh token si existe)
-        saveTokens(userInfo.tokens);
-        
-        // Configurar renovación automática de tokens
-        setupTokenRefresh();
-        
-        // Obtener return_url directamente de la URL actual (más confiable que el estado)
-        const urlParams = new URLSearchParams(window.location.search);
-        const returnUrlParam = urlParams.get('return_url');
-        const currentReturnUrl = returnUrlParam ? decodeURIComponent(returnUrlParam) : null;
-        
-        console.log('🔍 DEBUG - returnUrl (estado):', returnUrl);
-        console.log('🔍 DEBUG - returnUrl (URL directa):', currentReturnUrl);
-        console.log('🔍 DEBUG - userInfo:', userInfo);
-        
-        // Redirigir al return_url con los tokens y info del usuario (sin popup)
-        if (currentReturnUrl) {
-            console.log('✅ Redirigiendo a return_url:', currentReturnUrl);
-            
-            // Crear URL con los tokens y info del usuario como parámetros
-            const url = new URL(currentReturnUrl);
-            url.searchParams.set('access_token', userInfo.tokens.access_token);
-            url.searchParams.set('id_token', userInfo.tokens.id_token);
-            url.searchParams.set('token_type', userInfo.tokens.token_type);
-            url.searchParams.set('expires_in', userInfo.tokens.expires_in);
-            url.searchParams.set('scope', userInfo.tokens.scope);
-            
-            // Agregar refresh token si existe
-            if (userInfo.tokens.refresh_token) {
-                url.searchParams.set('refresh_token', userInfo.tokens.refresh_token);
-            }
-            
-            // Agregar información del usuario (como en el backend)
-            if (userInfo.user_id) {
-                url.searchParams.set('user_id', userInfo.user_id);
-            }
-            if (userInfo.name) {
-                url.searchParams.set('name', userInfo.name);
-            }
-            if (userInfo.email) {
-                url.searchParams.set('email', userInfo.email);
-            }
-            if (userInfo.username) {
-                url.searchParams.set('username', userInfo.username);
-            }
-            
-            console.log('🚀 URL final de redirección:', url.toString());
-            
-            // Redirigir
-            window.location.href = url.toString();
-        } else {
-            // Si no hay return_url, mostrar mensaje de éxito y recargar la página
-            console.log('Login exitoso:', userInfo);
-            
-            // Mostrar mensaje de éxito temporal
-            const successMessage = document.createElement('div');
-            successMessage.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: #4CAF50;
-                color: white;
-                padding: 15px 20px;
-                border-radius: 5px;
-                z-index: 10000;
-                font-family: Arial, sans-serif;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            `;
-            successMessage.textContent = '¡Login exitoso! Redirigiendo...';
-            document.body.appendChild(successMessage);
-            
-            // Remover el mensaje después de 3 segundos
-            setTimeout(() => {
-                if (successMessage.parentNode) {
-                    successMessage.parentNode.removeChild(successMessage);
-                }
-            }, 3000);
-            
-            // Recargar la página para mostrar el estado autenticado
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-        }
+        // Esta función se mantiene para compatibilidad con el flujo directo
+        // En el flujo OIDC estándar, esto se maneja en el callback
+        console.log('Login exitoso (flujo directo):', userInfo);
     };
 
     // Cargar scripts de Google y Apple
@@ -269,7 +204,6 @@ const SSOLogin = () => {
             };
 
             // Usar popup por defecto para evitar problemas de redirect_uri
-            // En producción, puedes cambiar a 'redirect' si tienes las URIs configuradas
             config.ux_mode = 'popup';
             
             google.accounts.id.initialize(config);
@@ -299,7 +233,7 @@ const SSOLogin = () => {
         }
     };
 
-    // Callback de Google Sign In
+    // Callback de Google Sign In (para flujo directo)
     const handleGoogleCallback = async (response) => {
         try {
             setLoading(true);
@@ -360,7 +294,7 @@ const SSOLogin = () => {
         }
     };
 
-    // Función para login con Apple
+    // Función para login con Apple (para flujo directo)
     const handleAppleLogin = async () => {
         try {
             setLoading(true);
@@ -420,7 +354,7 @@ const SSOLogin = () => {
         }
     };
 
-    // Función para login con email
+    // Función para login con email (para flujo directo)
     const handleEmailLogin = async (event) => {
         event.preventDefault();
         setLoading(true);
@@ -428,16 +362,6 @@ const SSOLogin = () => {
         const formData = new FormData(event.target);
         const email = formData.get('email');
         const password = formData.get('password');
-        
-        const retryFn = () => {
-            setShowEmailLogin(true);
-            setTimeout(() => {
-                const form = document.querySelector('form');
-                if (form) {
-                    form.dispatchEvent(new Event('submit'));
-                }
-            }, 100);
-        };
         
         try {
             const result = await fetch(`${INIA_CONFIG.baseUrl}/oidc/login/`, {
@@ -476,7 +400,7 @@ const SSOLogin = () => {
         }
     };
 
-    // Función para registro
+    // Función para registro (para flujo directo)
     const handleRegister = async (event) => {
         event.preventDefault();
         setLoading(true);
@@ -487,16 +411,6 @@ const SSOLogin = () => {
         const username = formData.get('username');
         const password = formData.get('password');
         const confirmPassword = formData.get('confirmPassword');
-        
-        const retryFn = () => {
-            setShowRegister(true);
-            setTimeout(() => {
-                const form = document.querySelector('form');
-                if (form) {
-                    form.dispatchEvent(new Event('submit'));
-                }
-            }, 100);
-        };
         
         // Validaciones
         if (password !== confirmPassword) {
@@ -616,7 +530,26 @@ const SSOLogin = () => {
                 
                 {!showRegister ? (
                     <>
-                        {/* Formulario de Login Principal */}
+                        {/* Botón principal OIDC */}
+                        <button 
+                            className="oidc-login-btn" 
+                            onClick={startOIDCFlow}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <>
+                                    Iniciando...
+                                    <div className="button-spinner"></div>
+                                </>
+                            ) : 'Iniciar Sesión con INIA'}
+                        </button>
+                        
+                        {/* Separador */}
+                        <div className="separator">
+                            <span>o</span>
+                        </div>
+                        
+                        {/* Formulario de Login Directo */}
                         <form onSubmit={handleEmailLogin} className="main-login-form">
                             <div className="form-group">
                                 <input 
@@ -839,8 +772,6 @@ const SSOLogin = () => {
                 
             </div>
 
-
-
             {/* Error Overlay */}
             {currentError && (
                 <ErrorOverlay 
@@ -854,4 +785,4 @@ const SSOLogin = () => {
     );
 };
 
-export default SSOLogin;
+export default OIDCLogin;
